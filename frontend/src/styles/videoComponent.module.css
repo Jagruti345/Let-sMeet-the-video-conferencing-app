@@ -1,0 +1,159 @@
+.meetVideoContainer {
+    position: relative;
+    height: 100vh;
+    background: linear-gradient(135deg, #020617, #0f172a, #1e293b);
+    overflow: hidden;
+    font-family: "Segoe UI", sans-serif;
+}
+
+/* Local user video (floating preview) */
+.meetUserVideo {
+    position: absolute;
+    bottom: 12vh;
+    left: 20px;
+    height: 22vh;
+    border-radius: 16px;
+    border: 2px solid rgba(255,255,255,0.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.meetUserVideo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+}
+
+/* Buttons container */
+.buttonContainers {
+    position: absolute;
+    width: 100%;
+    bottom: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+}
+
+/* Buttons styling */
+.buttonContainers svg {
+    font-size: 2.8rem;
+    padding: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Hover effect */
+.buttonContainers svg:hover {
+    background: rgba(255, 0, 0, 0.6);
+    transform: translateY(-5px) scale(1.1);
+}
+
+/* Conference layout */
+.conferenceView {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 20px;
+    gap: 15px;
+    justify-content: center;
+}
+
+/* Video tiles */
+.conferenceView video {
+    width: 35vw;
+    height: 45vh;
+    min-width: 280px;
+    border-radius: 15px;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.conferenceView video:hover {
+    transform: scale(1.03);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* Chat room */
+/* Chat room */
+.chatRoom {
+    position: absolute;
+    top: 5vh;
+    right: 20px;
+    height: 90vh;
+    width: 28vw;
+    background: rgba(255,255,255,0.08);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 15px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+
+/* Chat container */
+.chatContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Messages display */
+.chattingDisplay {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+/* Scrollbar visible + styled */
+.chattingDisplay::-webkit-scrollbar {
+    width: 6px;
+}
+.chattingDisplay::-webkit-scrollbar-track {
+    background: transparent;
+}
+.chattingDisplay::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+}
+
+/* Input area FIX */
+.chattingArea {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Input box */
+.chattingArea input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.15);
+    color: white;
+}
+
+/* Placeholder color */
+.chattingArea input::placeholder {
+    color: rgba(255,255,255,0.6);
+}
+
+/* Send button */
+.chattingArea button {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: none;
+    background: #ef4444;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.chattingArea button:hover {
+    background: #dc2626;
+}
