@@ -23,7 +23,7 @@ app.use(express.urlencoded({limit: "40kb" , extended: true}));
 
 
 const start = async () => {
-    const connectionDb = await mongoose.connect("mongodb://127.0.0.1:27017/ZoomClone");
+    const connectionDb = await mongoose.connect(process.env.MongoDB);
     console.log(`MONGO Connection DB $Host: ${connectionDb.connection.host}`)
 
     
