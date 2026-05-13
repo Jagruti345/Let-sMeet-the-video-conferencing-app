@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
-import { Badge, IconButton, TextField } from "@mui/material";
+import { Badge, IconButton, TextField, Paper, Typography, Box } from "@mui/material";
 import { Button } from "@mui/material";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import VideocamOffIcon from "@mui/icons-material/VideocamOff";
@@ -281,6 +281,12 @@ export default function VideoMeetComponent() {
 
     if (fromId !== socketIdRef.current) {
       if (signal.sdp) {
+        // If connection doesn't exist yet (race condition), create it
+        if (!connections[fromId]) {
+          console.log("RACE CONDITION: Initializing connection in gotMessageFromServer");
+          initializeConnection(fromId);
+        }
+
         connections[fromId]
           .setRemoteDescription(new RTCSessionDescription(signal.sdp))
           .then(() => {
@@ -308,6 +314,10 @@ export default function VideoMeetComponent() {
       }
 
       if (signal.ice) {
+        // If connection doesn't exist yet, wait or create
+        if (!connections[fromId]) {
+            initializeConnection(fromId);
+        }
         connections[fromId]
           .addIceCandidate(new RTCIceCandidate(signal.ice))
           .catch((e) => console.log(e));
@@ -315,13 +325,67 @@ export default function VideoMeetComponent() {
     }
   };
 
+  const initializeConnection = (socketListId, name) => {
+    connections[socketListId] = new RTCPeerConnection(peerConfigConnections);
+
+    connections[socketListId].onicecandidate = function (event) {
+        if (event.candidate != null) {
+            socketRef.current.emit(
+                "signal",
+                socketListId,
+                JSON.stringify({ ice: event.candidate }),
+            );
+        }
+    };
+
+    connections[socketListId].onaddstream = (event) => {
+        let videoExists = videoRef.current.find(
+            (video) => video.socketId === socketListId,
+        );
+
+        if (videoExists) {
+            setVideos((videos) => {
+                const updatedVideos = videos.map((video) =>
+                    video.socketId === socketListId
+                        ? { ...video, stream: event.stream, name: name }
+                        : video,
+                );
+                videoRef.current = updatedVideos;
+                return updatedVideos;
+            });
+        } else {
+            let newVideo = {
+                socketId: socketListId,
+                stream: event.stream,
+                name: name,
+                autoplay: true,
+                playsinline: true,
+            };
+
+            setVideos((videos) => {
+                const updatedVideos = [...videos, newVideo];
+                videoRef.current = updatedVideos;
+                return updatedVideos;
+            });
+        }
+    };
+
+    if (window.localStream !== undefined && window.localStream !== null) {
+        connections[socketListId].addStream(window.localStream);
+    } else {
+        let blackSilence = (...args) => new MediaStream([black(...args), silence()]);
+        window.localStream = blackSilence();
+        connections[socketListId].addStream(window.localStream);
+    }
+  }
+
   let connectToSocketServer = () => {
     socketRef.current = io.connect(server_url, { secure: false });
 
     socketRef.current.on("signal", gotMessageFromServer);
 
     socketRef.current.on("connect", () => {
-      socketRef.current.emit("join-call", window.location.href);
+      socketRef.current.emit("join-call", window.location.href, username);
       socketIdRef.current = socketRef.current.id;
 
       socketRef.current.on("chat-message", addMessage);
@@ -330,70 +394,11 @@ export default function VideoMeetComponent() {
         setVideos((videos) => videos.filter((video) => video.socketId !== id));
       });
 
-      socketRef.current.on("user-joined", (id, clients) => {
+      socketRef.current.on("user-joined", (id, clients, participants) => {
         clients.forEach((socketListId) => {
-          connections[socketListId] = new RTCPeerConnection(
-            peerConfigConnections,
-          );
-          // Wait for their ice candidate
-          connections[socketListId].onicecandidate = function (event) {
-            if (event.candidate != null) {
-              socketRef.current.emit(
-                "signal",
-                socketListId,
-                JSON.stringify({ ice: event.candidate }),
-              );
-            }
-          };
-
-          // Wait for their video stream
-          connections[socketListId].onaddstream = (event) => {
-            console.log("BEFORE:", videoRef.current);
-            console.log("FINDING ID: ", socketListId);
-
-            let videoExists = videoRef.current.find(
-              (video) => video.socketId === socketListId,
-            );
-
-            if (videoExists) {
-              console.log("FOUND EXISTING");
-
-              // Update the stream of the existing video
-              setVideos((videos) => {
-                const updatedVideos = videos.map((video) =>
-                  video.socketId === socketListId
-                    ? { ...video, stream: event.stream }
-                    : video,
-                );
-                videoRef.current = updatedVideos;
-                return updatedVideos;
-              });
-            } else {
-              // Create a new video
-              console.log("CREATING NEW");
-              let newVideo = {
-                socketId: socketListId,
-                stream: event.stream,
-                autoplay: true,
-                playsinline: true,
-              };
-
-              setVideos((videos) => {
-                const updatedVideos = [...videos, newVideo];
-                videoRef.current = updatedVideos;
-                return updatedVideos;
-              });
-            }
-          };
-
-          // Add the local video stream
-          if (window.localStream !== undefined && window.localStream !== null) {
-            connections[socketListId].addStream(window.localStream);
-          } else {
-            let blackSilence = (...args) =>
-              new MediaStream([black(...args), silence()]);
-            window.localStream = blackSilence();
-            connections[socketListId].addStream(window.localStream);
+          // IMPORTANT: Only create a new connection if it doesn't already exist
+          if (!connections[socketListId]) {
+            initializeConnection(socketListId, participants[socketListId]);
           }
         });
 
@@ -503,98 +508,92 @@ export default function VideoMeetComponent() {
   };
 
   return (
-    <div>
+    <div className={styles.meetVideoContainer}>
       {askForUsername === true ? (
-        <div>
-          <h2>Enter into Lobby </h2>
-          <TextField
-            id="outlined-basic"
-            label="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            variant="outlined"
-          />
-          <Button variant="contained" onClick={connect}>
-            Connect
-          </Button>
+        <div className="lobby-wrapper" style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '100vh',
+          background: '#020617',
+          color: 'white'
+        }}>
+          <Paper elevation={24} sx={{ 
+            p: 5, 
+            borderRadius: '24px', 
+            background: '#0f172a', 
+            border: '1px solid rgba(255,255,255,0.1)',
+            maxWidth: '450px',
+            width: '90%',
+            textAlign: 'center'
+          }}>
+            <Typography variant="h4" fontWeight="800" sx={{ mb: 1 }}>Join Lobby</Typography>
+            <Typography variant="body2" sx={{ mb: 4, color: '#94a3b8' }}>Set up your camera and microphone</Typography>
+            
+            <Box sx={{ mb: 4, borderRadius: '16px', overflow: 'hidden', background: 'black', aspectRatio: '16/9', border: '2px solid #6366f1' }}>
+               <video ref={localVideoRef} autoPlay muted style={{ width: '100%', display: 'block' }}></video>
+            </Box>
 
-          <div>
-            <video ref={localVideoRef} autoPlay muted></video>
-          </div>
+            <TextField
+              fullWidth
+              label="Display Name"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              variant="outlined"
+              sx={{ 
+                mb: 3,
+                '& .MuiOutlinedInput-root': {
+                    color: 'white',
+                    borderRadius: '12px',
+                    '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.4)' },
+                },
+                '& .MuiInputLabel-root': { color: '#94a3b8' }
+              }}
+            />
+            <Button 
+              fullWidth 
+              variant="contained" 
+              size="large" 
+              onClick={connect}
+              sx={{ py: 1.5, borderRadius: '12px', background: '#6366f1', fontWeight: 700 }}
+            >
+              Enter Meeting
+            </Button>
+          </Paper>
         </div>
       ) : (
-        <div className={styles.meetVideoContainer}>
-          {showModal ? (
-            <div className={styles.chatRoom}>
-              <div className={styles.chatContainer}>
-                <h1>Chat</h1>
-                <ClearIcon onClick={closeChat} style={{position: "absolute" , top: "10px", right:"10px" }}/>
-
-                <div className={styles.chattingDisplay}>
-                  {messages.length !== 0 ? (
-                    messages.map((item, index) => {
-                      console.log(messages);
-                      return (
-                        <div style={{ marginBottom: "20px" }} key={index}>
-                          <p style={{ fontWeight: "bold" }}>{item.sender}</p>
-                          <p>{item.data}</p>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p>No Messages Yet</p>
-                  )}
-                </div>
-
-                <div className={styles.chattingArea}>
-                  <TextField
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    id="outlined-basic"
-                    label="Enter Your chat"
-                    variant="outlined"
-                  />
-                  <Button variant="contained" onClick={sendMessage}>
-                    Send
-                  </Button>
-                </div>
+        <>
+          <div className={styles.videoHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Typography variant="h6" fontWeight="700">Room: {window.location.pathname.split('/').pop()}</Typography>
               </div>
-            </div>
-          ) : (
-            <></>
-          )}
+              <div style={{ display: 'flex', gap: '15px' }}>
+                  <IconButton onClick={() => setModal(!showModal)} sx={{ color: 'white' }}>
+                      <Badge badgeContent={newMessages} color="primary">
+                          <ChatIcon />
+                      </Badge>
+                  </IconButton>
+              </div>
+          </div>
 
-          <div className={styles.buttonContainers}>
-            <IconButton onClick={handleVideo} style={{ color: "white" }}>
-              {video === true ? <VideocamIcon /> : <VideocamOffIcon />}
-            </IconButton>
-            <IconButton onClick={handleEndCall} style={{ color: "red" }}>
-              <CallEndIcon />
-            </IconButton>
-            <IconButton onClick={handleAudio} style={{ color: "white" }}>
-              {audio === true ? <MicIcon /> : <MicOffIcon />}
-            </IconButton>
-
-            {screenAvailable === true ? (
-              <IconButton onClick={handleScreen} style={{ color: "white" }}>
-                {screen === true ? (
-                  <ScreenShareIcon />
-                ) : (
-                  <StopScreenShareIcon />
-                )}
-              </IconButton>
-            ) : (
-              <></>
-            )}
-
-            <Badge badgeContent={newMessages} max={999} color="orange">
-              <IconButton
-                onClick={() => setModal(!showModal)}
-                style={{ color: "white" }}
-              >
-                <ChatIcon />{" "}
-              </IconButton>
-            </Badge>
+          <div className={styles.conferenceView}>
+            {videos.map((video) => (
+              <div key={video.socketId} className={styles.videoCard}>
+                <video
+                  data-socket={video.socketId}
+                  ref={(ref) => {
+                    if (ref && video.stream) {
+                      ref.srcObject = video.stream;
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                ></video>
+                <div className={styles.videoLabel}>{video.name || "Participant"}</div>
+              </div>
+            ))}
           </div>
 
           <video
@@ -604,22 +603,62 @@ export default function VideoMeetComponent() {
             muted
           ></video>
 
-          <div className={styles.conferenceView}>
-            {videos.map((video) => (
-              <div key={video.socketId}>
-                <video
-                  data-socket={video.socketId}
-                  ref={(ref) => {
-                    if (ref && video.stream) {
-                      ref.srcObject = video.stream;
-                    }
-                  }}
-                  autoPlay
-                ></video>
+          {showModal && (
+            <div className={styles.chatRoom}>
+              <div className={styles.chatHeader}>
+                <Typography variant="h6" fontWeight="700">Chat</Typography>
+                <IconButton onClick={closeChat} sx={{ color: 'white' }}>
+                    <ClearIcon />
+                </IconButton>
               </div>
-            ))}
+
+              <div className={styles.chattingDisplay}>
+                {messages.length !== 0 ? (
+                  messages.map((item, index) => (
+                    <Box key={index} sx={{ mb: 2, p: 1.5, borderRadius: '12px', background: 'rgba(255,255,255,0.05)' }}>
+                      <Typography variant="caption" fontWeight="bold" sx={{ color: '#6366f1' }}>{item.sender}</Typography>
+                      <Typography variant="body2">{item.data}</Typography>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography sx={{ color: '#94a3b8', textAlign: 'center', mt: 4 }}>No messages yet</Typography>
+                )}
+              </div>
+
+              <div className={styles.chattingArea}>
+                <input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                />
+                <Button variant="contained" onClick={sendMessage} sx={{ borderRadius: '10px' }}>
+                  Send
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className={styles.buttonContainers}>
+            <IconButton onClick={handleVideo} sx={{ color: 'white', background: video ? 'rgba(255,255,255,0.1)' : '#ef4444' }}>
+              {video === true ? <VideocamIcon /> : <VideocamOffIcon />}
+            </IconButton>
+            
+            <IconButton onClick={handleAudio} sx={{ color: 'white', background: audio ? 'rgba(255,255,255,0.1)' : '#ef4444' }}>
+              {audio === true ? <MicIcon /> : <MicOffIcon />}
+            </IconButton>
+
+            {screenAvailable && (
+              <IconButton onClick={handleScreen} sx={{ color: 'white', background: screen ? '#6366f1' : 'rgba(255,255,255,0.1)' }}>
+                {screen === true ? <ScreenShareIcon /> : <StopScreenShareIcon />}
+              </IconButton>
+            )}
+
+            <IconButton onClick={handleEndCall} className={styles.endCall} sx={{ color: 'white' }}>
+              <CallEndIcon />
+            </IconButton>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

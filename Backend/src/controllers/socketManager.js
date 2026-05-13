@@ -17,19 +17,29 @@ export const connectToSocket = (server) => {
   io.on("connection", (socket) => {
     console.log("something connected");
     
-    socket.on("join-call", (path) => {
+    socket.on("join-call", (path, userName) => {
       if (connections[path] === undefined) {
         connections[path] = [];
       }
       connections[path].push(socket.id);
-
+      
+      // Store username
       timeOnline[socket.id] = new Date();
+      socket.username = userName; 
+
+      // Get usernames for all clients in this room
+      const participants = {};
+      connections[path].forEach(id => {
+        const clientSocket = io.sockets.sockets.get(id);
+        participants[id] = clientSocket ? clientSocket.username : "Anonymous";
+      });
 
       for (let a = 0; a < connections[path].length; a++) {
         io.to(connections[path][a]).emit(
           "user-joined",
           socket.id,
           connections[path],
+          participants
         );
       }
 

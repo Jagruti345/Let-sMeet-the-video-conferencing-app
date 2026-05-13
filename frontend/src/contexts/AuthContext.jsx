@@ -32,6 +32,11 @@ export const AuthProvider = ({ children }) => {
 
 
             if (request.status === httpStatus.CREATED) {
+                if (request.data.token) {
+                    localStorage.setItem("token", request.data.token);
+                    setUserData(request.data.user);
+                    router("/home");
+                }
                 return request.data.message;
             }
         } catch (err) {
@@ -51,6 +56,7 @@ export const AuthProvider = ({ children }) => {
 
             if (request.status === httpStatus.OK) {
                 localStorage.setItem("token", request.data.token);
+                setUserData(request.data.user);
                 router("/home")
             }
         } catch (err) {
