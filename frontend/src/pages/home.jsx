@@ -81,7 +81,7 @@ function HomeComponent() {
                         variant="outlined"
                         onClick={() => {
                             localStorage.removeItem('token');
-                            window.location.href = "/auth";
+                            navigate("/auth");
                         }}
                         startIcon={<LogoutIcon />}
                         sx={{ 
