@@ -15,7 +15,7 @@ export const connectToSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("something connected");
+    console.log("🟢 NEW CONNECTION:", socket.id, "from", socket.handshake.headers.origin);
     
     socket.on("join-call", (path, userName) => {
       if (connections[path] === undefined) {

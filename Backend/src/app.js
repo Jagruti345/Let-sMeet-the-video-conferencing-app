@@ -33,6 +33,16 @@ app.use(express.urlencoded({limit: "40kb" , extended: true}));
       res.send("<h1>Let's Meet Backend is Running</h1>");
   });
 
+  app.get("/test-db", async (req, res) => {
+      try {
+          const state = mongoose.connection.readyState;
+          const states = ["disconnected", "connected", "connecting", "disconnecting"];
+          res.json({ status: states[state], mongodb_env: process.env.MongoDB ? "Defined" : "Undefined" });
+      } catch (err) {
+          res.status(500).json({ error: err.message });
+      }
+  });
+
 
 
 const start = async () => {
@@ -40,8 +50,10 @@ const start = async () => {
         if (!process.env.MongoDB) {
             throw new Error("MongoDB Environment Variable is NOT SET. Please check your Render/Deployment settings.");
         }
-        const connectionDb = await mongoose.connect(process.env.MongoDB);
-        console.log(`MONGO Connection DB $Host: ${connectionDb.connection.host}`)
+        const connectionDb = await mongoose.connect(process.env.MongoDB, {
+            serverSelectionTimeoutMS: 5000 // 5 seconds timeout
+        });
+        console.log(`✅ MONGO Connected: ${connectionDb.connection.host}`)
         
         server.listen(app.get("port"), () => {
             console.log(`Server is running on port ${app.get("port")}`);
