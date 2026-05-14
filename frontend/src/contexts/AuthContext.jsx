@@ -8,7 +8,7 @@ import server from "../environment";
 export const AuthContext = createContext({});
 
 const client = axios.create({
-    baseURL: `${server}/api/v1/users`
+    baseURL: `${server}/api/v1`
 })
 
 
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
 
     const handleRegister = async (name, username, password) => {
         try {
-            let request = await client.post("register", {
+            let request = await client.post("users/register", {
                 name: name,
                 username: username,
                 password: password
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
     const handleLogin = async (username, password) => {
         try {
-            let request = await client.post("login", {
+            let request = await client.post("users/login", {
                 username: username,
                 password: password
             });
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
 
     const getHistoryOfUser = async () => {
         try {
-            let request = await client.get("get_all_activity", {
+            let request = await client.get("users/get_all_activity", {
                 params: {
                     token: localStorage.getItem("token")
                 }
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }) => {
 
     const addToUserHistory = async (meetingCode) => {
         try {
-            let request = await client.post("add_to_activity", {
+            let request = await client.post("users/add_to_activity", {
                 token: localStorage.getItem("token"),
                 meeting_code: meetingCode
             });
