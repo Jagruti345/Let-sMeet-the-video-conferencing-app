@@ -16,9 +16,9 @@ const io = connectToSocket(server);
 
 app.set("port", (process.env.PORT || 8000));
 app.use(cors({
-  origin: "*", // Allows any frontend (Vercel, Render, etc.) to connect
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  origin: (origin, callback) => callback(null, true), // Allow all origins dynamically
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"]
 }));
 app.use(express.json({limit: "40kb" }));
 app.use(express.urlencoded({limit: "40kb" , extended: true}));
