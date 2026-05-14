@@ -8,15 +8,16 @@ import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import HomeIcon from '@mui/icons-material/Home';
-import { IconButton } from "@mui/material";
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import { IconButton, Tooltip } from "@mui/material";
 import '../App.css';
-
-
-
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function History(){
     const {getHistoryOfUser} = useContext(AuthContext);
     const [meetings, setMeetings] = useState([]);
+    const { theme, toggleTheme } = useTheme();
 
     const routeTo = useNavigate();
 
@@ -24,10 +25,9 @@ export default function History(){
         const fetchHistory = async () =>{
             try {
                 const history = await getHistoryOfUser();
-                console.log(history); 
                 setMeetings(history);
             } catch (error) {
-                
+                console.log(error);
             }
         }
         fetchHistory();
@@ -46,14 +46,21 @@ export default function History(){
   <div className="history-container">
     
     <div className="history-header">
-      <IconButton 
-        className="home-btn"
-        onClick={() => routeTo("/home")}
-      >
-        <HomeIcon />
-      </IconButton>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <IconButton 
+            className="home-btn"
+            onClick={() => routeTo("/home")}
+          >
+            <HomeIcon />
+          </IconButton>
+          <h2 className="history-title">Meeting History</h2>
+      </div>
 
-      <h2 className="history-title">Meeting History</h2>
+      <div style={{ marginLeft: 'auto' }}>
+          <IconButton onClick={toggleTheme} sx={{ color: 'var(--text-primary)', background: 'var(--bg-tertiary)', borderRadius: '12px', ml: 2 }}>
+              {theme === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+          </IconButton>
+      </div>
     </div>
 
     <div className="history-grid">

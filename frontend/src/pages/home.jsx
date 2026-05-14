@@ -2,23 +2,26 @@ import React, { useContext, useState } from "react";
 import withAuth from "../utils/withAuth";
 import { useNavigate } from "react-router-dom";
 import '../App.css';
-import { Button, IconButton, TextField, Box, Typography, Paper } from "@mui/material";
+import { Button, IconButton, TextField, Box, Typography, Paper, Tooltip } from "@mui/material";
 import RestoreIcon from '@mui/icons-material/Restore';
 import LogoutIcon from '@mui/icons-material/Logout';
 import VideoCallIcon from '@mui/icons-material/VideoCall';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { AuthContext } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 function HomeComponent() {
     let navigate = useNavigate();
     const [meetingCode, setMeetingCode] = useState("");   
     const { addToUserHistory, userData } = useContext(AuthContext);
+    const { theme, toggleTheme } = useTheme();
 
     let handleJoinVideoCall = async () => {
         let trimmedCode = meetingCode.trim();
         if (!trimmedCode) return;
 
-        // If it's a full URL, extract the code (last segment)
         try {
             if (trimmedCode.includes("://") || trimmedCode.includes("/")) {
                 const urlParts = trimmedCode.split("/");
@@ -31,7 +34,6 @@ function HomeComponent() {
         if (!trimmedCode) return;
         
         try {
-            // Try to add to history but don't let it block navigation
             addToUserHistory(trimmedCode).catch(err => {
                 console.log("History sync failed", err);
             });
@@ -51,21 +53,30 @@ function HomeComponent() {
     return (
         <div className="home-wrapper">
             <div className="navBar">
-                <div style={{ display: "flex", alignItems: "center", gap: '10px' }}>
-                    <VideoCallIcon sx={{ fontSize: 32, color: '#6366f1' }} />
-                    <h2 style={{ margin: 0, fontWeight: 700 }}>Let'sMeet</h2>
+                <div style={{ display: "flex", alignItems: "center", gap: '15px' }}>
+                    <Box sx={{ width: 40, height: 40, borderRadius: '12px', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <VideoCallIcon sx={{ fontSize: 24, color: 'white' }} />
+                    </Box>
+                    <Typography variant="h5" fontWeight="800">Let'sMeet</Typography>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-                    <Typography variant="body1" sx={{ color: '#e2e8f0', fontWeight: 600 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Typography variant="body1" sx={{ mr: 2, color: 'var(--text-secondary)', fontWeight: 600, display: { xs: 'none', md: 'block' } }}>
                         Hello, {userData?.name || "User"}
                     </Typography>
-                    <IconButton 
-                        onClick={() => navigate("/history")}
-                        sx={{ color: '#94a3b8', '&:hover': { color: 'white' } }}
-                    >
-                        <RestoreIcon />
-                        <Typography variant="body2" sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>History</Typography>
+                    
+                    <IconButton onClick={toggleTheme} sx={{ color: 'var(--text-primary)', background: 'var(--bg-tertiary)', borderRadius: '12px' }}>
+                        {theme === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
                     </IconButton>
+
+                    <Tooltip title="History">
+                        <IconButton 
+                            onClick={() => navigate("/history")}
+                            sx={{ color: 'var(--text-primary)', background: 'var(--bg-tertiary)', borderRadius: '12px' }}
+                        >
+                            <RestoreIcon />
+                        </IconButton>
+                    </Tooltip>
+
                     <Button 
                         variant="outlined"
                         onClick={() => {
@@ -73,7 +84,18 @@ function HomeComponent() {
                             window.location.href = "/auth";
                         }}
                         startIcon={<LogoutIcon />}
-                        sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '10px' }}
+                        sx={{ 
+                            borderColor: 'var(--glass-border)', 
+                            color: 'var(--text-primary)', 
+                            borderRadius: '12px',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            px: 2,
+                            '&:hover': {
+                                borderColor: 'var(--accent-primary)',
+                                background: 'rgba(99, 102, 241, 0.05)'
+                            }
+                        }}
                     >
                         Logout
                     </Button>
@@ -82,12 +104,12 @@ function HomeComponent() {
 
             <div className="meetContainer">
                 <div className="leftPanel">
-                    <Box sx={{ maxWidth: '550px' }}>
-                        <Typography variant="h2" sx={{ fontWeight: 800, lineHeight: 1.2, mb: 3, color: 'white' }}>
-                            Premium video meetings. Now free for everyone.
+                    <Box sx={{ maxWidth: '600px' }}>
+                        <Typography variant="h2" sx={{ fontWeight: 900, lineHeight: 1.1, mb: 3, letterSpacing: '-1.5px', color: 'var(--text-primary)' }}>
+                            Premium video <span className="gradient-text">meetings</span> for everyone.
                         </Typography>
-                        <Typography variant="h6" sx={{ color: '#94a3b8', mb: 5, fontWeight: 400 }}>
-                            We re-engineered the service we built for secure business meetings, Let'sMeet, to make it free and available for all.
+                        <Typography variant="h6" sx={{ color: 'var(--text-secondary)', mb: 5, fontWeight: 400, lineHeight: 1.6 }}>
+                            Connect, collaborate, and celebrate from anywhere with Let'sMeet. We've re-imagined the service for modern real-time communication.
                         </Typography>
 
                         <Box sx={{ display: "flex", gap: "20px", flexWrap: 'wrap' }}>
@@ -96,7 +118,17 @@ function HomeComponent() {
                                 size="large"
                                 onClick={handleCreateMeeting}
                                 startIcon={<VideoCallIcon />}
-                                sx={{ background: '#6366f1', px: 3, py: 1.5, borderRadius: '10px', fontWeight: 600 }}
+                                sx={{ 
+                                    background: 'var(--accent-primary)', 
+                                    px: 4, 
+                                    py: 2, 
+                                    borderRadius: '16px', 
+                                    fontWeight: 700,
+                                    fontSize: '1rem',
+                                    textTransform: 'none',
+                                    '&:hover': { background: 'var(--accent-secondary)' },
+                                    boxShadow: '0 10px 20px rgba(99, 102, 241, 0.3)'
+                                }}
                             >
                                 New Meeting
                             </Button>
@@ -110,19 +142,20 @@ function HomeComponent() {
                                             handleJoinVideoCall();
                                         }
                                     }}
-                                    placeholder="Enter a code or link"
+                                    placeholder="Enter code or link"
                                     variant="outlined"
                                     InputProps={{
-                                        startAdornment: <KeyboardIcon sx={{ mr: 1, color: '#94a3b8' }} />,
+                                        startAdornment: <KeyboardIcon sx={{ mr: 1, color: 'var(--text-secondary)' }} />,
                                     }}
                                     sx={{ 
-                                        background: 'rgba(255,255,255,0.05)',
-                                        borderRadius: '10px',
+                                        background: 'var(--bg-tertiary)',
+                                        borderRadius: '16px',
                                         '& .MuiOutlinedInput-root': {
-                                            color: 'white',
-                                            '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                                            '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.4)' },
-                                            '&.Mui-focused fieldset': { borderColor: '#6366f1' },
+                                            color: 'var(--text-primary)',
+                                            borderRadius: '16px',
+                                            '& fieldset': { borderColor: 'var(--glass-border)' },
+                                            '&:hover fieldset': { borderColor: 'var(--accent-primary)' },
+                                            '&.Mui-focused fieldset': { borderColor: 'var(--accent-primary)' },
                                         }
                                     }}
                                 />
@@ -130,31 +163,33 @@ function HomeComponent() {
                                     onClick={handleJoinVideoCall} 
                                     disabled={!meetingCode}
                                     sx={{ 
-                                        color: meetingCode ? '#6366f1' : 'rgba(255,255,255,0.3)',
-                                        fontWeight: 600,
-                                        fontSize: '1rem'
+                                        color: meetingCode ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                        fontWeight: 700,
+                                        fontSize: '1rem',
+                                        textTransform: 'none'
                                     }}
                                 >
                                     Join
                                 </Button>
                             </Box>
                         </Box>
-                        <Box sx={{ mt: 4, pt: 4, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                            <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                        <Box sx={{ mt: 6, pt: 4, borderTop: '1px solid var(--glass-border)' }}>
+                            <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
                                 <span 
-                                    style={{ color: '#6366f1', cursor: 'pointer' }}
+                                    style={{ color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: 600 }}
                                     onClick={() => navigate("/")}
-                                >Learn more</span> about Let'sMeet
+                                >Learn more</span> about Let'sMeet security and privacy.
                             </Typography>
                         </Box>
                     </Box>
                 </div>
                 <div className="rightPanel">
-                    <Paper elevation={24} sx={{ 
-                        borderRadius: '24px', 
+                    <Paper elevation={0} sx={{ 
+                        borderRadius: '40px', 
                         overflow: 'hidden', 
                         background: 'transparent',
-                        boxShadow: '0 50px 100px -20px rgba(0, 0, 0, 0.7)'
+                        boxShadow: 'var(--shadow-primary)',
+                        border: '1px solid var(--glass-border)'
                     }}>
                         <img src="https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?q=80&w=1974&auto=format&fit=crop" alt="Meeting" style={{ width: '100%', display: 'block' }} />
                     </Paper>
