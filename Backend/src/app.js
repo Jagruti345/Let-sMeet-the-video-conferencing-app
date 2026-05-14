@@ -16,10 +16,7 @@ const io = connectToSocket(server);
 
 app.set("port", (process.env.PORT || 8000));
 app.use(cors({
-     origin: [
-    "http://localhost:5173", // local dev
-    "https://lets-meet-the-video-conferencing-app-eaur.onrender.com" // deployed frontend
-  ],
+  origin: "*", // Allows any frontend (Vercel, Render, etc.) to connect
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
