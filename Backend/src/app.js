@@ -37,7 +37,7 @@ app.use(express.urlencoded({limit: "40kb" , extended: true}));
       try {
           const state = mongoose.connection.readyState;
           const states = ["disconnected", "connected", "connecting", "disconnecting"];
-          const mongoURI = process.env.MongoDB || process.env.MONGODB_URI || process.env.DATABASE_URL;
+          const mongoURI = process.env.MongoDB;
           res.json({
               status: states[state],
               mongodb_env: mongoURI ? "Defined" : "Undefined",
