@@ -1,6 +1,5 @@
 
-const DEFAULT_API_URL = import.meta.env.VITE_DEFAULT_API_URL || window.location.origin;
-
+const DEFAULT_API_URL = import.meta.env.VITE_DEFAULT_API_URL || "https://lets-meet-the-video-conferencing-app.onrender.com";
 const server = import.meta.env.VITE_API_URL ||
     (window.location.hostname === "localhost" || 
      window.location.hostname === "127.0.0.1" || 
