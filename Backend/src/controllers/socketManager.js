@@ -7,10 +7,14 @@ let timeOnline = {};
 export const connectToSocket = (server) => {
   const io = new Server(server,{
     cors: {
-      origin: (origin, callback) => callback(null, true),
+      origin: function(origin, callback) {
+        if(!origin) return callback(null, true);
+        callback(null, true);
+      },
       methods: ["GET", "POST"],
       allowedHeaders: ["*"],
       credentials: true,
+      optionsSuccessStatus: 200
     },
   });
 

@@ -16,9 +16,15 @@ const io = connectToSocket(server);
 
 app.set("port", (process.env.PORT || 8000));
 app.use(cors({
-  origin: (origin, callback) => callback(null, true), // Allow all origins dynamically
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile, Postman, curl etc)
+    if(!origin) return callback(null, true);
+    callback(null, true); // Allow all origins
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"]
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 200
 }));
 app.use(express.json({limit: "40kb" }));
 app.use(express.urlencoded({limit: "40kb" , extended: true}));
