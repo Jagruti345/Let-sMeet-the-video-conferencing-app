@@ -1,5 +1,5 @@
 
-const DEFAULT_API_URL = import.meta.env.VITE_DEFAULT_API_URL;
+const DEFAULT_API_URL = import.meta.env.VITE_DEFAULT_API_URL || window.location.origin;
 
 const server = import.meta.env.VITE_API_URL ||
     (window.location.hostname === "localhost" || 
