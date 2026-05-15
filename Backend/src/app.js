@@ -37,7 +37,12 @@ app.use(express.urlencoded({limit: "40kb" , extended: true}));
       try {
           const state = mongoose.connection.readyState;
           const states = ["disconnected", "connected", "connecting", "disconnecting"];
-          res.json({ status: states[state], mongodb_env: process.env.MongoDB ? "Defined" : "Undefined" });
+          const mongoURI = process.env.MongoDB || process.env.MONGODB_URI || process.env.DATABASE_URL;
+          res.json({
+              status: states[state],
+              mongodb_env: mongoURI ? "Defined" : "Undefined",
+              mongoURI_source: mongoURI ? "configured" : "missing"
+          });
       } catch (err) {
           res.status(500).json({ error: err.message });
       }
@@ -47,21 +52,23 @@ app.use(express.urlencoded({limit: "40kb" , extended: true}));
 
 const start = async () => {
     try {
-        if (!process.env.MongoDB) {
-            throw new Error("MongoDB Environment Variable is NOT SET. Please check your Render/Deployment settings.");
+        const mongoURI = process.env.MongoDB || process.env.MONGODB_URI || process.env.DATABASE_URL;
+
+        if (!mongoURI) {
+            throw new Error("MongoDB environment variable is NOT SET. Please configure MongoDB, MONGODB_URI, or DATABASE_URL.");
         }
-        const connectionDb = await mongoose.connect(process.env.MongoDB, {
+        const connectionDb = await mongoose.connect(mongoURI, {
             serverSelectionTimeoutMS: 5000 // 5 seconds timeout
         });
-        console.log(`✅ MONGO Connected: ${connectionDb.connection.host}`)
+        console.log(`✅ MONGO Connected: ${connectionDb.connection.host}`);
         
         server.listen(app.get("port"), () => {
             console.log(`Server is running on port ${app.get("port")}`);
         });
     } catch (error) {
         console.error("Failed to start server:", error);
-        // Still listen on port so Render doesn't think the deployment failed, 
-        // but routes will probably fail if they depend on DB
+        // Still listen on port so deployment health checks can pass,
+        // but API/auth routes will fail until the database is available.
         server.listen(app.get("port"), () => {
             console.log(`Server running in ERROR mode on port ${app.get("port")}. Check MongoDB connection.`);
         });

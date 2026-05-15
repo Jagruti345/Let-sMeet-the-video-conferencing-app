@@ -55,7 +55,7 @@ export default function Authentication() {
             }
         } catch (err) {
             console.log(err);
-            const msg = err.response?.data?.message || "Something went wrong. Please try again.";
+            const msg = err?.message || err?.response?.data?.message || "Something went wrong. Please try again.";
             setError(msg);
         }
     };

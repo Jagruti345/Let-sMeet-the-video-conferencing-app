@@ -8,18 +8,13 @@ import server from "../environment";
 export const AuthContext = createContext({});
 
 const client = axios.create({
-    baseURL: `${server}/api/v1`
+    baseURL: `${server.replace(/\/$/, "")}/api/v1`,
+    timeout: 10000,
 })
 
 
 export const AuthProvider = ({ children }) => {
-
-    const authContext = useContext(AuthContext);
-
-
-    const [userData, setUserData] = useState(authContext);
-
-
+    const [userData, setUserData] = useState(null);
     const router = useNavigate();
 
     const handleRegister = async (name, username, password) => {
@@ -40,7 +35,7 @@ export const AuthProvider = ({ children }) => {
                 return request.data.message;
             }
         } catch (err) {
-            throw err;
+            throw err.response?.data || err;
         }
     }
 
@@ -51,16 +46,13 @@ export const AuthProvider = ({ children }) => {
                 password: password
             });
 
-            console.log(username, password)
-            console.log(request.data)
-
             if (request.status === httpStatus.OK) {
                 localStorage.setItem("token", request.data.token);
                 setUserData(request.data.user);
                 router("/home")
             }
         } catch (err) {
-            throw err;
+            throw err.response?.data || err;
         }
     }
 
@@ -71,10 +63,9 @@ export const AuthProvider = ({ children }) => {
                     token: localStorage.getItem("token")
                 }
             });
-            return request.data
-        } catch
-         (err) {
-            throw err;
+            return request.data;
+        } catch (err) {
+            throw err.response?.data || err;
         }
     }
 
@@ -84,9 +75,9 @@ export const AuthProvider = ({ children }) => {
                 token: localStorage.getItem("token"),
                 meeting_code: meetingCode
             });
-            return request
+            return request;
         } catch (e) {
-            throw e;
+            throw e.response?.data || e;
         }
     }
 
