@@ -9,8 +9,7 @@ export const AuthContext = createContext({});
 
 const client = axios.create({
     baseURL: `${server.replace(/\/$/, "")}/api/v1`,
-    timeout: 10000,
-    withCredentials: true,
+    timeout: 60000,
     headers: {
         "Content-Type": "application/json"
     }
