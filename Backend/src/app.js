@@ -22,10 +22,12 @@ app.use(cors({
     callback(null, true); // Allow all origins
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   optionsSuccessStatus: 200
 }));
+app.options("*", cors());
+
 app.use(express.json({limit: "40kb" }));
 app.use(express.urlencoded({limit: "40kb" , extended: true}));
 
